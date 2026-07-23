@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:messageapp/core/constants/app_constants.dart';
@@ -6,15 +7,16 @@ import 'package:messageapp/core/constants/app_constants.dart';
 import '../../../../../components/CustomButton/custom_button.dart';
 import '../../../../../components/CustomTextField/CustomTextfield.dart';
 import '../../../../../core/constants/asset_constants.dart';
+import '../../providers/login_providers.dart';
 
-class LoginScreen extends StatefulWidget {
+class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
+class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   final _emailController = TextEditingController();
   final _passwordController = TextEditingController();
@@ -28,6 +30,22 @@ class _LoginScreenState extends State<LoginScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.listen<LoginState>(loginControllerProvider, (previous, next) {
+      if (next is LoginSuccess) {
+        // Go to home screen on success
+        context.go(AppPaths.bottom_manu);
+      } else if (next is LoginFailure) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(next.error.message),
+            backgroundColor: Colors.redAccent,
+          ),
+        );
+      }
+    });
+    final loginState = ref.watch(loginControllerProvider);
+    final isLoading = loginState is LoginLoading;
+
     debugPrint("CustomTextField build");
     return Scaffold(
       body: Container(
@@ -121,6 +139,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           controller: _emailController,
                           hintText: "Email",
                           isEmail: true,
+                          enabled: !isLoading,
                           keyboardType: TextInputType.emailAddress,
                           filColor: Colors.white,
                           // Solid white background as in image
@@ -136,6 +155,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           hintText: "Password",
                           isPassword: true,
                           filColor: Colors.white,
+                          enabled: !isLoading,
                           borderColor: const Color(0xFFE2E8F0),
                         ),
 
@@ -143,10 +163,17 @@ class _LoginScreenState extends State<LoginScreen> {
 
                         // Sign In Button
                         CustomButton(
-                          text: "Sign In",
-                          onTap: () {
-                            context.go(AppPaths.bottom_manu);
-                           },
+                          text: isLoading ? "Signing In..." : "Sign In",
+                          onTap: isLoading
+                              ? null // disable tap during load
+                              : () {
+                            if (_formKey.currentState!.validate()) {
+                              ref.read(loginControllerProvider.notifier).login(
+                                email: _emailController.text.trim(),
+                                password: _passwordController.text.trim(),
+                              );
+                            }
+                          },
                         ),
                         const SizedBox(height: 24),
 

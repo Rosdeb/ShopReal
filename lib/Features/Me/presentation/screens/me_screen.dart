@@ -1,5 +1,4 @@
 import 'dart:ui';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_advanced_switch/flutter_advanced_switch.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,9 +7,11 @@ import 'package:go_router/go_router.dart';
 import 'package:messageapp/components/AppText/appText.dart';
 import 'package:messageapp/core/constants/app_constants.dart';
 import 'package:messageapp/core/utils/app_colour.dart';
-
 import '../../../../core/constants/asset_constants.dart';
+import '../../../auth/presentation/providers/login_providers.dart';
+import '../../data/models/profile_model.dart';
 import '../providers/setting_providers.dart';
+import '../providers/profile_provider.dart';
 
 class MeScreen extends ConsumerWidget {
   const MeScreen({super.key});
@@ -74,186 +75,275 @@ class MeScreen extends ConsumerWidget {
                         padding: const EdgeInsets.symmetric(horizontal: 18.0),
                         child: Column(
                           children: [
-                            _buildSectionCard([
-                              ListTile(
-                                contentPadding: const EdgeInsets.symmetric(
-                                  horizontal: 16,
-                                  vertical: 8,
-                                ),
-                                leading: const CircleAvatar(
-                                  radius: 30,
-                                  backgroundImage: NetworkImage(
-                                    'https://cdn.motor1.com/images/mgl/bglVnv/s3/best-new-cars-coming-out-in-2025.webp',
-                                  ), // Replace with actual asset/image
-                                ),
-                                title: const AppText(
-                                  'Alex Koch',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 18,
-                                  ),
-                                ),
-                                subtitle: const AppText(
-                                  'alex.koch@brand.com',
-                                  style: TextStyle(
-                                    color: AppColors.textLight,
-                                    fontSize: 14,
-                                  ),
-                                ),
-                                onTap: () {},
-                              ),
-                            ]),
-                            const SizedBox(height: 16),
-                            _buildCapacityCard(),
-                            const SizedBox(height: 16),
-                            _buildSectionCard([
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 18.0,
-                                  vertical: 5,
-                                ),
-                                child: AppText(
-                                  'Account Settings',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w500,
-                                    fontSize: 18,
-                                  ),
-                                ),
-                              ),
-                              _buildListTile(
-                                icon: Icons.person_outline,
-                                iconColor: AppColors.successGreen,
-                                title: 'Personal Information',
-                                onTap: () {
-                                  // context.push(AppPaths.edit_profile);
-                                },
-                              ),
-                              _buildDivider(),
-                              _buildListTile(
-                                icon: Icons.mail_outline,
-                                iconColor: AppColors.successGreen,
-                                title: 'Password & Security',
-                                onTap: () {
-                                  //context.push(AppPaths.email_setting);
-                                },
-                              ),
-
-                              _buildDivider(),
-                              _buildListTile(
-                                icon: Icons.credit_card,
-                                iconColor: AppColors.successGreen,
-                                title: 'Subscription',
-                                onTap: () {
-                                  //context.push(AppPaths.email_setting);
-                                },
-                              ),
-                            ]),
-
-                            const SizedBox(height: 16),
-                            _buildSectionCard([
-                              Padding(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: 18.0,
-                                  vertical: 5,
-                                ),
-                                child: AppText(
-                                  'Preferences',
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w500,
-                                    fontSize: 18,
-                                  ),
-                                ),
-                              ),
-                              _buildListTile(
-                                icon: Icons.person_outline,
-                                iconColor: AppColors.successGreen,
-                                title: 'Notifications',
-                                onTap: () {
-                                  context.push(AppPaths.notification_setting);
-                                },
-                              ),
-                              _buildDivider(),
-                              _buildListTile(
-                                icon: Icons.mail_outline,
-                                iconColor: AppColors.successGreen,
-                                title: 'Help & Support',
-                                onTap: () {
-                                  //context.push(AppPaths.email_setting);
-                                },
-                              ),
-
-                              _buildDivider(),
-                              _buildListTile(
-                                icon: Icons.credit_card,
-                                iconColor: AppColors.successGreen,
-                                title: 'Privacy Policy',
-                                onTap: () {
-                                  //context.push(AppPaths.email_setting);
-                                },
-                              ),
-                            ]),
-
-                            const SizedBox(height: 16),
-
-                            SizedBox(
-                              width: double.infinity,
-                              child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: Color(0xFFEF4444),
-                                  foregroundColor: AppColors.destructiveRed,
-                                  elevation: 0,
-                                  padding: const EdgeInsets.symmetric(
-                                    vertical: 16,
-                                  ),
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(12),
-                                  ),
-                                ),
-                                onPressed: () {},
-                                child: Row(
-                                  mainAxisAlignment: MainAxisAlignment.center,
+                              // --- PROFILE & CAPACITY CARD ---
+                              ref.watch(profileFutureProvider).when(
+                                data: (profile) => Column(
                                   children: [
-                                    const AppText(
-                                      'Log Out',
-                                      style: TextStyle(
-                                        fontSize: 16,
-                                        fontWeight: FontWeight.bold,
-                                        color: Colors.white,
+                                    _buildSectionCard([
+                                      ListTile(
+                                        contentPadding: const EdgeInsets.symmetric(
+                                          horizontal: 16,
+                                          vertical: 8,
+                                        ),
+                                        leading: CircleAvatar(
+                                          radius: 30,
+                                          backgroundImage: profile.avatar != null && profile.avatar!.isNotEmpty
+                                              ? NetworkImage(profile.avatar!)
+                                              : const NetworkImage(
+                                                  'https://cdn.motor1.com/images/mgl/bglVnv/s3/best-new-cars-coming-out-in-2025.webp',
+                                                ),
+                                        ),
+                                        title: AppText(
+                                          profile.name.isNotEmpty ? profile.name : 'Unknown User',
+                                          style: const TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 18,
+                                          ),
+                                        ),
+                                        subtitle: AppText(
+                                          profile.email,
+                                          style: const TextStyle(
+                                            color: AppColors.textLight,
+                                            fontSize: 14,
+                                          ),
+                                        ),
+                                        onTap: () {},
                                       ),
-                                    ),
-                                    const SizedBox(width: 12),
-                                    Image.asset(Assets.logout),
+                                    ]),
+                                    const SizedBox(height: 16),
+                                    _buildCapacityCard(profile),
+                                  ],
+                                ),
+                                loading: () => Column(
+                                  children: [
+                                    _buildSectionCard([
+                                      ListTile(
+                                        contentPadding: const EdgeInsets.symmetric(
+                                          horizontal: 16,
+                                          vertical: 8,
+                                        ),
+                                        leading: Container(
+                                          width: 60,
+                                          height: 60,
+                                          decoration: const BoxDecoration(
+                                            color: Color(0xFFE5E7EB),
+                                            shape: BoxShape.circle,
+                                          ),
+                                        ),
+                                        title: Container(
+                                          height: 16,
+                                          width: 140,
+                                          decoration: BoxDecoration(
+                                            color: const Color(0xFFE5E7EB),
+                                            borderRadius: BorderRadius.circular(4),
+                                          ),
+                                        ),
+                                        subtitle: Padding(
+                                          padding: const EdgeInsets.only(top: 8),
+                                          child: Container(
+                                            height: 14,
+                                            width: 180,
+                                            decoration: BoxDecoration(
+                                              color: const Color(0xFFE5E7EB),
+                                              borderRadius: BorderRadius.circular(4),
+                                            ),
+                                          ),
+                                        ),
+                                      ),
+                                    ]),
+                                    const SizedBox(height: 16),
+                                    _buildSkeletonCapacityCard(),
+                                  ],
+                                ),
+                                error: (err, stack) => Column(
+                                  children: [
+                                    _buildSectionCard([
+                                      ListTile(
+                                        leading: const CircleAvatar(
+                                          radius: 30,
+                                          backgroundColor: Color(0xFFFEE2E2),
+                                          child: Icon(Icons.error_outline, color: Colors.red),
+                                        ),
+                                        title: const AppText(
+                                          'Failed to load profile',
+                                          style: TextStyle(fontWeight: FontWeight.bold),
+                                        ),
+                                        subtitle: const AppText('Forbidden (403) or Session Expired'),
+                                        trailing: IconButton(
+                                          icon: const Icon(Icons.refresh, color: AppColors.successGreen),
+                                          onPressed: () => ref.refresh(profileFutureProvider),
+                                        ),
+                                      ),
+                                    ]),
+                                    const SizedBox(height: 16),
+                                    _buildSkeletonCapacityCard(),
                                   ],
                                 ),
                               ),
-                            ),
-                            const SizedBox(height: 32),
+                              const SizedBox(height: 16),
 
-                            // --- FOOTER ---
-                            Center(
-                              child: Column(
-                                children: [
-                                  AppText(
-                                    'Terms of Service • Privacy Policy',
-                                    style: TextStyle(
-                                      color: AppColors.textLight,
-                                      fontSize: 12,
+                              // --- SETTINGS CARDS (ALWAYS RENDERED UNCONDITIONALLY) ---
+                              _buildSectionCard([
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 18.0,
+                                    vertical: 5,
+                                  ),
+                                  child: AppText(
+                                    'Account Settings',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w500,
+                                      fontSize: 18,
                                     ),
                                   ),
-                                  SizedBox(height: 4),
-
-                                  AppText(
-                                    '©2026 Pilach Home Inc.',
-                                    style: TextStyle(
-                                      color: AppColors.textLight,
-                                      fontSize: 12,
+                                ),
+                                _buildListTile(
+                                  icon: Icons.person_outline,
+                                  iconColor: AppColors.successGreen,
+                                  title: 'Personal Information',
+                                  onTap: () {
+                                    // context.push(AppPaths.edit_profile);
+                                  },
+                                ),
+                                _buildDivider(),
+                                _buildListTile(
+                                  icon: Icons.mail_outline,
+                                  iconColor: AppColors.successGreen,
+                                  title: 'Password & Security',
+                                  onTap: () {
+                                    //context.push(AppPaths.email_setting);
+                                  },
+                                ),
+                                _buildDivider(),
+                                _buildListTile(
+                                  icon: Icons.credit_card,
+                                  iconColor: AppColors.successGreen,
+                                  title: 'Subscription',
+                                  onTap: () {
+                                    //context.push(AppPaths.email_setting);
+                                  },
+                                ),
+                              ]),
+                              const SizedBox(height: 16),
+                              _buildSectionCard([
+                                Padding(
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 18.0,
+                                    vertical: 5,
+                                  ),
+                                  child: AppText(
+                                    'Preferences',
+                                    style: const TextStyle(
+                                      fontWeight: FontWeight.w500,
+                                      fontSize: 18,
                                     ),
                                   ),
-                                ],
+                                ),
+                                _buildListTile(
+                                  icon: Icons.person_outline,
+                                  iconColor: AppColors.successGreen,
+                                  title: 'Notifications',
+                                  onTap: () {
+                                    context.push(AppPaths.notification_setting);
+                                  },
+                                ),
+                                _buildDivider(),
+                                _buildListTile(
+                                  icon: Icons.mail_outline,
+                                  iconColor: AppColors.successGreen,
+                                  title: 'Help & Support',
+                                  onTap: () {
+                                    //context.push(AppPaths.email_setting);
+                                  },
+                                ),
+                                _buildDivider(),
+                                _buildListTile(
+                                  icon: Icons.credit_card,
+                                  iconColor: AppColors.successGreen,
+                                  title: 'Privacy Policy',
+                                  onTap: () {
+                                    //context.push(AppPaths.email_setting);
+                                  },
+                                ),
+                              ]),
+                              const SizedBox(height: 16),
+                              SizedBox(
+                                width: double.infinity,
+                                child: ElevatedButton(
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFFEF4444),
+                                    foregroundColor: AppColors.destructiveRed,
+                                    elevation: 0,
+                                    padding: const EdgeInsets.symmetric(
+                                      vertical: 16,
+                                    ),
+                                    shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                  ),
+                                  onPressed: () async {
+                                    final confirm = await showDialog<bool>(
+                                      context: context,
+                                      builder: (context) => AlertDialog(
+                                        title: const Text('Log Out'),
+                                        content: const Text('Are you sure you want to log out?'),
+                                        actions: [
+                                          TextButton(
+                                            onPressed: () => Navigator.pop(context, false),
+                                            child: const Text('Cancel'),
+                                          ),
+                                          TextButton(
+                                            onPressed: () => Navigator.pop(context, true),
+                                            child: const Text(
+                                              'Log Out',
+                                              style: TextStyle(color: Colors.red),
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                    if (confirm == true) {
+                                      await ref.read(tokenServiceProvider).clearTokens();
+                                      ref.read(loginControllerProvider.notifier).reset();
+                                      if (context.mounted) {
+                                        context.go(AppPaths.login);
+                                      }
+                                    }
+                                  },
+                                  child: const AppText(
+                                    'Log Out',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 16,
+                                    ),
+                                  ),
+                                ),
                               ),
-                            ),
+                              const SizedBox(height: 32),
+                              Center(
+                                child: Column(
+                                  children: [
+                                    AppText(
+                                      'Terms of Service • Privacy Policy',
+                                      style: TextStyle(
+                                        color: AppColors.textLight,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    AppText(
+                                      '©2026 Pilach Home Inc.',
+                                      style: TextStyle(
+                                        color: AppColors.textLight,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(height: 80),
 
-                            const SizedBox(height: 80),
                           ],
                         ),
                       ),
@@ -268,7 +358,7 @@ class MeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildCapacityCard() {
+  Widget _buildCapacityCard(ProfileModel profile) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -287,13 +377,33 @@ class MeScreen extends ConsumerWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            "Capacity",
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.bold,
-              color: Color(0xFF1E293B),
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                "Capacity",
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Colors.black,
+                ),
+              ),
+              // Container(
+              //   padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+              //   decoration: BoxDecoration(
+              //     color: AppColors.successGreen.withValues(alpha: 0.1),
+              //     borderRadius: BorderRadius.circular(8),
+              //   ),
+              //   child: Text(
+              //     profile.activePlanName,
+              //     style: const TextStyle(
+              //       fontSize: 12,
+              //       fontWeight: FontWeight.bold,
+              //       color: AppColors.successGreen,
+              //     ),
+              //   ),
+              // ),
+            ],
           ),
           const SizedBox(height: 12),
           Row(
@@ -301,7 +411,7 @@ class MeScreen extends ConsumerWidget {
               Expanded(
                 child: _buildCapacityStatusBox(
                   title: "Scans Today",
-                  fractionText: "10/10",
+                  fractionText: "${profile.scansToday}/${profile.scansLimit}",
                   highlightColor: const Color(0xFF2563EB), // Blue
                 ),
               ),
@@ -309,8 +419,59 @@ class MeScreen extends ConsumerWidget {
               Expanded(
                 child: _buildCapacityStatusBox(
                   title: "Saved Products",
-                  fractionText: "0/20",
+                  fractionText: "${profile.savesToday}/${profile.savedProductsLimit}",
                   highlightColor: const Color(0xFF2563EB), // Blue
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSkeletonCapacityCard() {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFF1F5F9)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                "Capacity",
+                style: TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                  color: Color(0xFFE2E8F0),
+                ),
+              ),
+
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              Expanded(
+                child: _buildCapacityStatusBox(
+                  title: "Scans Today",
+                  fractionText: "-/-",
+                  highlightColor: const Color(0xFF94A3B8),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: _buildCapacityStatusBox(
+                  title: "Saved Products",
+                  fractionText: "-/-",
+                  highlightColor: const Color(0xFF94A3B8),
                 ),
               ),
             ],

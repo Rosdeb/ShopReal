@@ -1,9 +1,9 @@
 import 'package:dio/dio.dart';
 import 'api_exceptions.dart';
 import 'api_result.dart';
+import 'auth_interceptor.dart';
+import 'logging_interceptor.dart';
 import 'network_info.dart';
-import 'interceptors/auth_interceptor.dart';
-import 'interceptors/logging_interceptor.dart';
 
 /// Central place every network call in the app goes through.
 ///

@@ -1,9 +1,12 @@
-import '../api_client.dart';
-import '../api_endpoints.dart';
-import '../api_result.dart';
 
-/// Example of a feature-level service. Every real service in the app
-/// follows this exact shape: thin wrapper around ApiClient + a parser.
+import 'package:messageapp/core/services/api_client.dart';
+import '../../Features/auth/data/models/login_response.dart';
+import 'api_endpoints.dart';
+import 'api_result.dart';
+import 'package:messageapp/core/services/api_client.dart';
+import 'api_endpoints.dart';
+import 'api_result.dart';
+
 class AuthApiService {
   final ApiClient _client;
   AuthApiService(this._client);
@@ -14,24 +17,13 @@ class AuthApiService {
   }) {
     return _client.post<LoginResponse>(
       ApiEndpoints.login,
-      data: {'email': email, 'password': password},
-      parser: (json) => LoginResponse.fromJson(json as Map<String, dynamic>),
+      data: {
+        'email': email,
+        'password': password,
+      },
+      parser: (json) => LoginResponse.fromJson(json),
     );
   }
-}
-
-class LoginResponse {
-  final String accessToken;
-  final String refreshToken;
-  final String userId;
-
-  LoginResponse({required this.accessToken, required this.refreshToken, required this.userId});
-
-  factory LoginResponse.fromJson(Map<String, dynamic> json) => LoginResponse(
-        accessToken: json['access_token'] as String,
-        refreshToken: json['refresh_token'] as String,
-        userId: json['user_id'] as String,
-      );
 }
 
 /* ---------------------------------------------------------------------

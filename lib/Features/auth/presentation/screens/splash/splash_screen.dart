@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:messageapp/core/constants/asset_constants.dart';
-import 'package:messageapp/features/auth/presentation/providers/splash_provider.dart';
+import 'package:messageapp/Features/auth/presentation/providers/splash_provider.dart';
 
 class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
-import '../../data/models/notification_model.dart';
+import 'package:intl/intl.dart';
+import '../../../Home/data/models/notification_model.dart';
 
 class NotificationListTile extends StatelessWidget {
-  final NotificationModel notification;
+  final AppNotification notification;
   final VoidCallback? onTap;
 
   const NotificationListTile({
@@ -18,7 +19,8 @@ class NotificationListTile extends StatelessWidget {
 
     return InkWell(
       onTap: onTap,
-      child: Padding(
+      child: Container(
+        color: notification.isRead ? Colors.transparent : softOrangeBg.withOpacity(0.3),
         padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
         child: Row(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -31,7 +33,7 @@ class NotificationListTile extends StatelessWidget {
                 color: softOrangeBg,
                 shape: BoxShape.circle,
               ),
-              child: Icon(
+              child: const Icon(
                 Icons.notifications,
                 color: primaryOrange,
                 size: 22,
@@ -52,21 +54,33 @@ class NotificationListTile extends StatelessWidget {
                       Expanded(
                         child: Text(
                           notification.title,
-                          style: const TextStyle(
-                            fontSize: 15,
-                            fontWeight: FontWeight.w700,
-                            color: Color(0xFF1E293B),
+                          maxLines: 1,
+                          style: TextStyle(
+                            fontSize: 14,
+                            fontWeight: notification.isRead ? FontWeight.w600 : FontWeight.w800,
+                            color: const Color(0xFF1E293B),
                           ),
                         ),
                       ),
                       const SizedBox(width: 8),
-                      Text(
-                        notification.timeAgo,
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade500,
-                          fontWeight: FontWeight.w400,
-                        ),
+                      Row(
+                        children: [
+                          Text(
+                            _formatTimeAgo(notification.createdAt.toString()),
+                            style: TextStyle(
+                              fontSize: 12,
+                              color: Colors.grey.shade500,
+                              fontWeight: FontWeight.w400,
+                            ),
+                          ),
+                          if (!notification.isRead) ...[
+                            const SizedBox(width: 6),
+                            const CircleAvatar(
+                              radius: 4,
+                              backgroundColor: primaryOrange,
+                            ),
+                          ],
+                        ],
                       ),
                     ],
                   ),
@@ -74,13 +88,13 @@ class NotificationListTile extends StatelessWidget {
 
                   // Subtitle / Description Body
                   Text(
-                    notification.body,
+                    notification.message,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
                     style: TextStyle(
                       fontSize: 13,
                       height: 1.35,
-                      color: Colors.grey.shade600,
+                      color: notification.isRead ? Colors.grey.shade600 : Colors.black87,
                     ),
                   ),
                 ],
@@ -91,4 +105,32 @@ class NotificationListTile extends StatelessWidget {
       ),
     );
   }
+
+  String _formatTimeAgo(String date) {
+    final DateTime time = DateTime.parse(date).toLocal();
+    final Duration difference = DateTime.now().difference(time);
+
+    if (difference.inSeconds < 60) {
+      return "Just now";
+    }
+
+    if (difference.inMinutes < 60) {
+      return "${difference.inMinutes} min ago";
+    }
+
+    if (difference.inHours < 24) {
+      return "${difference.inHours} hour${difference.inHours > 1 ? 's' : ''} ago";
+    }
+
+    if (difference.inDays == 1) {
+      return "Yesterday";
+    }
+
+    if (difference.inDays < 7) {
+      return "${difference.inDays} days ago";
+    }
+
+    return DateFormat("MMM d, yyyy").format(time);
+  }
+
 }
