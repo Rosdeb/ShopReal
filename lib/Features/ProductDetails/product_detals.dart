@@ -77,7 +77,7 @@ class ProductDetailsScreen extends ConsumerWidget {
                   // --- SCROLLABLE MAIN CONTENT ---
                   Expanded(
                     child: SingleChildScrollView(
-                      physics: const BouncingScrollPhysics(),
+                      physics: AlwaysScrollableScrollPhysics(),
                       padding: const EdgeInsets.symmetric(horizontal: 20.0),
                       child: Column(
                         crossAxisAlignment: CrossAxisAlignment.start,

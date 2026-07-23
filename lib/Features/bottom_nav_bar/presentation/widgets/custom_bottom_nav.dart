@@ -20,14 +20,32 @@ class CustomBottomNav extends ConsumerWidget {
         child: Container(
           height: 70,
           decoration: BoxDecoration(
-            color: Colors.black12.withValues(alpha: 0.75),
+            color: const Color(0xFF1E1E1E),
             borderRadius: BorderRadius.circular(24),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.4)),
+            border: Border.all(color: Colors.white.withOpacity(.08), width: 1),
             boxShadow: [
+              // Main shadow
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.12),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
+                color: Colors.black.withOpacity(.45),
+                blurRadius: 30,
+                spreadRadius: 2,
+                offset: const Offset(0, 18),
+              ),
+
+              // Soft shadow
+              BoxShadow(
+                color: Colors.black.withOpacity(.25),
+                blurRadius: 14,
+                spreadRadius: 0,
+                offset: const Offset(0, 8),
+              ),
+
+              // Top highlight
+              BoxShadow(
+                color: Colors.white.withOpacity(.04),
+                blurRadius: 1,
+                spreadRadius: -1,
+                offset: const Offset(0, -1),
               ),
             ],
           ),

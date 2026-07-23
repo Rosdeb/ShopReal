@@ -157,9 +157,7 @@ class _SaveScreenState extends ConsumerState<SaveScreen> {
                                 right: 16,
                                 bottom: 70,
                               ),
-                              physics: const BouncingScrollPhysics(
-                                parent: AlwaysScrollableScrollPhysics(),
-                              ),
+                              physics:  AlwaysScrollableScrollPhysics(),
                               gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                                 crossAxisCount: 2,
                                 mainAxisSpacing: 14,
@@ -207,6 +205,7 @@ class _SaveScreenState extends ConsumerState<SaveScreen> {
                               return const ProductItemShimmer();
                             },
                           ),
+
                         error: (err, stack) => Center(
                           child: Text(
                             'Failed to load saved products: $err',

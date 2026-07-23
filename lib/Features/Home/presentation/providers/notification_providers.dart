@@ -46,6 +46,20 @@ class NotificationNotifier extends AsyncNotifier<NotificationResponse> {
     }
   }
 
+  void markLocalAsRead(String notificationId) {
+    if (state.hasValue && state.value != null) {
+      final currentResponse = state.value!;
+      final updatedNotifications = currentResponse.notifications.map((notif) {
+        if (notif.id == notificationId) {
+          return notif.copyWith(isRead: true);
+        }
+        return notif;
+      }).toList();
+
+      state = AsyncData(currentResponse.copyWith(notifications: updatedNotifications));
+    }
+  }
+
   Future<void> markAsRead(String notificationId) async {
     final apiClient = ref.read(apiClientProvider);
 
@@ -55,8 +69,8 @@ class NotificationNotifier extends AsyncNotifier<NotificationResponse> {
     );
 
     result.when(
-      success: (_) async {
-        await refresh();
+      success: (_) {
+        markLocalAsRead(notificationId);
       },
       failure: (e) {
         state = AsyncError(e, StackTrace.current);
@@ -88,7 +102,7 @@ class MarkNotificationReadNotifier extends AsyncNotifier<void> {
     result.when(
       success: (_) {
         state = const AsyncData(null);
-        ref.invalidate(notificationProvider);
+        ref.read(notificationProvider.notifier).markLocalAsRead(notificationId);
       },
       failure: (e) {
         state = AsyncError(e, StackTrace.current);

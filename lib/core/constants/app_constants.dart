@@ -21,10 +21,12 @@ class AppPaths {
   static const String splash = '/';
   static const String login = '/login_screen';
   static const String register = '/register_screen';
+  static const String emailVerification = '/email_verification_screen';
   static const String main = '/main';
   static const String profile = '/profile';
   static const String product_details = '/product_detals';
   static const String search_product = '/search_screen';
+  static const String help_support = '/help_support';
   static const String block_userlist = '/block_userlist_screen';
   static const String notification_setting = '/notification_screen';
   static const String notification_screen = '/notification_list_screen';
@@ -35,12 +37,14 @@ class AppPaths {
   static const String email_setting = '/email_setting_screen';
   static const String security_privacy = '/security_privacy_screen';
   static const String edit_profile = '/edit_profile_screen';
+  static const String changePassword = '/change_password_screen';
 }
 
 class AppRoutes {
   static const String splash = 'splash';
   static const String login = '/login_screen';
   static const String register = '/register_screen';
+  static const String emailVerification = '/email_verification_screen';
   static const String main = 'main';
   static const String profile = 'profile';
   static const String home = '/home_screen';
@@ -51,6 +55,8 @@ class AppRoutes {
   static const String email_setting = '/email_setting_screen';
   static const String security_privacy = '/security_privacy_screen';
   static const String edit_profile = '/edit_profile_screen';
+  static const String help_support = '/help_support';
+  static const String changePassword = '/change_password_screen';
 
   static const String notification_setting = '/notification_screen';
   static const String notification_screen = '/notification_list_screen';

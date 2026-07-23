@@ -1,0 +1,90 @@
+{
+  "project_info": {
+    "project_number": "216387410941",
+    "project_id": "shopreal-71605",
+    "storage_bucket": "shopreal-71605.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:216387410941:android:2ab88bf4fcbe76f9539794",
+        "android_client_info": {
+          "package_name": "com.example.messageapp"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "216387410941-84g359m34sdqdkrot00l68q6anqrak8m.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBsvL7OJod-VXWV3fc1agSWslQzHMKjB6U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "216387410941-84g359m34sdqdkrot00l68q6anqrak8m.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "216387410941-4e7ce7s17trgok4rgiu4fceqa4eqv46m.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.shopreal.llc"
+              }
+            }
+          ]
+        }
+      }
+    },
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:216387410941:android:613bfb130e203ce9539794",
+        "android_client_info": {
+          "package_name": "com.shopreal.llc"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "216387410941-8cmsl35nktdi3mbm410p0oqug39tfn7a.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.shopreal.llc",
+            "certificate_hash": "6d677b96b3d2dcad360569f4e3ad03dbc0ea6800"
+          }
+        },
+        {
+          "client_id": "216387410941-84g359m34sdqdkrot00l68q6anqrak8m.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBsvL7OJod-VXWV3fc1agSWslQzHMKjB6U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "216387410941-84g359m34sdqdkrot00l68q6anqrak8m.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "216387410941-4e7ce7s17trgok4rgiu4fceqa4eqv46m.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.shopreal.llc"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

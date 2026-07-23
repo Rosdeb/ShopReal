@@ -2,7 +2,7 @@ import '../../../../core/services/api_client.dart';
 import '../../../../core/services/api_endpoints.dart';
 import '../../../ProductDetails/data/models/product_Analysis_models.dart';
 import '../../../ProductDetails/data/models/product_model.dart';
-
+import 'package:dio/dio.dart';
 class ProductRepository {
   ProductRepository(this.apiClient);
 
@@ -51,6 +51,26 @@ class ProductRepository {
     final result = await apiClient.post(
       ApiEndpoints.analysis,
       data: {'url': url},
+      parser: (json) => AnalysisStartResponse.fromJson(json as Map<String, dynamic>),
+    );
+
+    return result.when(
+      success: (data) => data,
+      failure: (e) => throw e,
+    );
+  }
+
+  Future<AnalysisStartResponse> AnalyzeImage(String imagePath) async {
+    final formData = FormData.fromMap({
+      'image': await MultipartFile.fromFile(
+        imagePath,
+        filename: imagePath.split('/').last,
+      ),
+    });
+
+    final result = await apiClient.upload<AnalysisStartResponse>(
+      ApiEndpoints.analysis,
+      formData: formData,
       parser: (json) => AnalysisStartResponse.fromJson(json as Map<String, dynamic>),
     );
 
@@ -109,6 +129,25 @@ class ProductRepository {
 
     return result.when(
       success: (data) => data,
+      failure: (e) => throw e,
+    );
+  }
+
+  Future<AnalysisStartResponse> analyzeProductImage (String imagePath)async{
+
+    final fromData = FormData.fromMap({
+      'image': await MultipartFile.fromFile(
+        imagePath,filename: imagePath.split('/').last,
+      )
+    });
+    final result = await apiClient.post(
+      ApiEndpoints.analysis,
+      data: fromData,
+      parser: (json) => AnalysisStartResponse.fromJson(json as Map<String, dynamic>),
+    );
+    
+    return result.when(
+      success: (startResponse) => startResponse,
       failure: (e) => throw e,
     );
   }

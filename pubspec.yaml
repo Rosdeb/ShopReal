@@ -2,7 +2,7 @@ name: messageapp
 description: "My - Buisness"
 # The following line prevents the package from being accidentally published to
 # pub.dev using `flutter pub publish`. This is preferred for private packages.
-publish_to: 'dev' # Remove this line if you wish to publish to pub.dev
+publish_to: 'none' # Remove this line if you wish to publish to pub.dev
 
 # The following defines the version and build number for your application.
 # A version number is three numbers separated by dots, like 1.2.43
@@ -63,6 +63,9 @@ dependencies:
   cupertino_native: ^0.1.1
   connectivity_plus: ^7.3.0
   marquee: ^2.3.0
+  sign_in_with_apple: ^8.1.0
+  google_sign_in: ^7.2.0
+  crypto: ^3.0.7
 
 dev_dependencies:
   flutter_test:

@@ -7,6 +7,16 @@ class NotificationResponse {
     required this.pagination,
   });
 
+  NotificationResponse copyWith({
+    List<AppNotification>? notifications,
+    NotificationPagination? pagination,
+  }) {
+    return NotificationResponse(
+      notifications: notifications ?? this.notifications,
+      pagination: pagination ?? this.pagination,
+    );
+  }
+
   factory NotificationResponse.fromJson(Map<String, dynamic> json) {
     final response = json['response'] as Map<String, dynamic>;
 
@@ -53,6 +63,42 @@ class AppNotification {
     required this.updatedAt,
     required this.user,
   });
+
+  AppNotification copyWith({
+    String? id,
+    String? userId,
+    String? type,
+    String? status,
+    String? title,
+    String? message,
+    String? scope,
+    NotificationData? data,
+    String? imageUrl,
+    String? actionUrl,
+    bool? isRead,
+    DateTime? readAt,
+    DateTime? createdAt,
+    DateTime? updatedAt,
+    NotificationUser? user,
+  }) {
+    return AppNotification(
+      id: id ?? this.id,
+      userId: userId ?? this.userId,
+      type: type ?? this.type,
+      status: status ?? this.status,
+      title: title ?? this.title,
+      message: message ?? this.message,
+      scope: scope ?? this.scope,
+      data: data ?? this.data,
+      imageUrl: imageUrl ?? this.imageUrl,
+      actionUrl: actionUrl ?? this.actionUrl,
+      isRead: isRead ?? this.isRead,
+      readAt: readAt ?? this.readAt,
+      createdAt: createdAt ?? this.createdAt,
+      updatedAt: updatedAt ?? this.updatedAt,
+      user: user ?? this.user,
+    );
+  }
 
   factory AppNotification.fromJson(Map<String, dynamic> json) {
     return AppNotification(

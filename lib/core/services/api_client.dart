@@ -109,7 +109,7 @@ class ApiClient {
   }) =>
       _request(() => _dio.delete(path, data: data, queryParameters: queryParameters, cancelToken: cancelToken), parser);
 
-  /// Multipart upload helper.
+  /// Multipart upload helper (POST).
   Future<ApiResult<T>> upload<T>(
     String path, {
     required FormData formData,
@@ -119,6 +119,19 @@ class ApiClient {
   }) =>
       _request(
         () => _dio.post(path, data: formData, onSendProgress: onSendProgress, cancelToken: cancelToken),
+        parser,
+      );
+
+  /// Multipart upload helper (PATCH) — used for profile updates.
+  Future<ApiResult<T>> uploadPatch<T>(
+    String path, {
+    required FormData formData,
+    required T Function(dynamic json) parser,
+    void Function(int sent, int total)? onSendProgress,
+    CancelToken? cancelToken,
+  }) =>
+      _request(
+        () => _dio.patch(path, data: formData, onSendProgress: onSendProgress, cancelToken: cancelToken),
         parser,
       );
 

@@ -32,8 +32,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   Widget build(BuildContext context) {
     ref.listen<LoginState>(loginControllerProvider, (previous, next) {
       if (next is LoginSuccess) {
-        // Go to home screen on success
         context.go(AppPaths.bottom_manu);
+      } else if (next is LoginNeedsVerification) {
+        context.push(AppPaths.emailVerification, extra: next.email);
       } else if (next is LoginFailure) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -197,19 +198,35 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                               child: _buildSocialButton(
                                 label: "Google",
                                 iconPath: "assets/icons/google.svg",
-                                // Replace with your Google asset path
-                                onTap: () {},
+                                onTap: isLoading
+                                    ? () {}
+                                    : () {
+                                        ref
+                                            .read(loginControllerProvider.notifier)
+                                            .signWithGoogle();
+                                      },
                               ),
                             ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: _buildSocialButton(
-                                label: "Apple ID",
-                                iconPath: "assets/icons/apple.svg",
-                                // Replace with your Apple asset path
-                                onTap: () {},
+                            if (Theme.of(context).platform ==
+                                    TargetPlatform.iOS ||
+                                Theme.of(context).platform ==
+                                    TargetPlatform.macOS) ...[
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: _buildSocialButton(
+                                  label: "Apple ID",
+                                  iconPath: "assets/icons/apple.svg",
+                                  onTap: isLoading
+                                      ? () {}
+                                      : () {
+                                          ref
+                                              .read(loginControllerProvider
+                                                  .notifier)
+                                              .signInWithApple();
+                                        },
+                                ),
                               ),
-                            ),
+                            ],
                           ],
                         ),
                         const SizedBox(height: 32),

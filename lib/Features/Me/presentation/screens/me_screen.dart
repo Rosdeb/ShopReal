@@ -12,6 +12,7 @@ import '../../../auth/presentation/providers/login_providers.dart';
 import '../../data/models/profile_model.dart';
 import '../providers/setting_providers.dart';
 import '../providers/profile_provider.dart';
+import '../widgets/subscriptionBottomSheet.dart';
 
 class MeScreen extends ConsumerWidget {
   const MeScreen({super.key});
@@ -70,7 +71,7 @@ class MeScreen extends ConsumerWidget {
                   const SizedBox(height: 10),
                   Expanded(
                     child: SingleChildScrollView(
-                      physics: const BouncingScrollPhysics(),
+                      physics: const AlwaysScrollableScrollPhysics(),
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 18.0),
                         child: Column(
@@ -107,7 +108,9 @@ class MeScreen extends ConsumerWidget {
                                             fontSize: 14,
                                           ),
                                         ),
-                                        onTap: () {},
+                                        onTap: () {
+                                          context.push(AppPaths.edit_profile);
+                                        },
                                       ),
                                     ]),
                                     const SizedBox(height: 16),
@@ -202,7 +205,7 @@ class MeScreen extends ConsumerWidget {
                                   iconColor: AppColors.successGreen,
                                   title: 'Personal Information',
                                   onTap: () {
-                                    // context.push(AppPaths.edit_profile);
+                                    context.push(AppPaths.edit_profile);
                                   },
                                 ),
                                 _buildDivider(),
@@ -211,7 +214,7 @@ class MeScreen extends ConsumerWidget {
                                   iconColor: AppColors.successGreen,
                                   title: 'Password & Security',
                                   onTap: () {
-                                    //context.push(AppPaths.email_setting);
+                                    context.push(AppPaths.changePassword);
                                   },
                                 ),
                                 _buildDivider(),
@@ -221,9 +224,15 @@ class MeScreen extends ConsumerWidget {
                                   title: 'Subscription',
                                   onTap: () {
                                     //context.push(AppPaths.email_setting);
+                                    showAppBottomSheet(
+                                      context: context,
+                                      child: const SubscriptionBottomSheet(),
+                                    );
+
                                   },
                                 ),
                               ]),
+
                               const SizedBox(height: 16),
                               _buildSectionCard([
                                 Padding(
@@ -253,7 +262,7 @@ class MeScreen extends ConsumerWidget {
                                   iconColor: AppColors.successGreen,
                                   title: 'Help & Support',
                                   onTap: () {
-                                    //context.push(AppPaths.email_setting);
+                                    context.push(AppPaths.help_support);
                                   },
                                 ),
                                 _buildDivider(),
@@ -310,13 +319,21 @@ class MeScreen extends ConsumerWidget {
                                       }
                                     }
                                   },
-                                  child: const AppText(
-                                    'Log Out',
-                                    style: TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 16,
-                                    ),
+                                  child: Row(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const AppText(
+                                        'Log Out',
+                                        style: TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                      const SizedBox(width: 8),
+                                      Icon(Icons.login_outlined,color: Colors.white,),
+
+                                    ],
                                   ),
                                 ),
                               ),
@@ -536,6 +553,78 @@ class MeScreen extends ConsumerWidget {
           ),
         ],
       ),
+    );
+  }
+
+  Future<void> showAppBottomSheet({
+    required BuildContext context,
+    required Widget child,
+    String? title,
+  }) {
+    return showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) {
+        return DraggableScrollableSheet(
+          expand: false,
+          initialChildSize: 0.50,
+          minChildSize: 0.4,
+          maxChildSize: 0.95,
+          builder: (context, controller) {
+            return Container(
+              width: double.infinity,
+              decoration: const BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.vertical(
+                  top: Radius.circular(28),
+                ),
+              ),
+              child: Column(
+                children: [
+                  const SizedBox(height: 10),
+
+                  // Drag Handle
+                  Container(
+                    width: 48,
+                    height: 5,
+                    decoration: BoxDecoration(
+                      color: Colors.grey.shade300,
+                      borderRadius: BorderRadius.circular(50),
+                    ),
+                  ),
+
+                  if (title != null) ...[
+                    const SizedBox(height: 18),
+                    Text(
+                      title,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ],
+
+                  const SizedBox(height: 16),
+
+                  Expanded(
+                    child: SingleChildScrollView(
+                      controller: controller,
+                      padding: const EdgeInsets.fromLTRB(
+                        20,
+                        0,
+                        20,
+                        20,
+                      ),
+                      child: child,
+                    ),
+                  ),
+                ],
+              ),
+            );
+          },
+        );
+      },
     );
   }
 

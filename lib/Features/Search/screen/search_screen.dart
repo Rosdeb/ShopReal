@@ -1,16 +1,22 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../../core/utils/app_colour.dart';
+import '../../../../components/RoundBackButton.dart';
 import '../../Home/data/repositories/product_repository.dart';
+import '../../ProductDetails/data/models/product_Analysis_models.dart';
 import '../../ProductDetails/providers/prodcut_providers.dart';
 import '../../../../core/services/api_client.dart';
+import '../../../../core/services/api_exceptions.dart';
 import '../../auth/presentation/providers/login_providers.dart';
 import 'package:go_router/go_router.dart';
 import 'package:messageapp/core/constants/app_constants.dart';
+import '../../Me/presentation/providers/profile_provider.dart';
 
 class AnalysisDataScreen extends ConsumerStatefulWidget {
   final String? url;
-  const AnalysisDataScreen({super.key, this.url});
+  final String? imagePath;
+  const AnalysisDataScreen({super.key, this.url, this.imagePath});
 
   @override
   ConsumerState<AnalysisDataScreen> createState() => _AnalysisDataScreenState();
@@ -31,11 +37,11 @@ class _AnalysisDataScreenState extends ConsumerState<AnalysisDataScreen> {
   @override
   void initState() {
     super.initState();
-    if (widget.url != null && widget.url!.isNotEmpty) {
+    if ((widget.url != null && widget.url!.isNotEmpty) || (widget.imagePath != null && widget.imagePath!.isNotEmpty)) {
       _startAnalysisJob();
     } else {
       _hasError = true;
-      _errorMessage = 'No URL provided for analysis.';
+      _errorMessage = 'No URL or Image provided for analysis.';
     }
   }
 
@@ -47,23 +53,32 @@ class _AnalysisDataScreenState extends ConsumerState<AnalysisDataScreen> {
 
   void _startAnalysisJob() {
     final repository = ProductRepository(ref.read(apiClientProvider));
-    
+
+
     // Set first step in progress
     setState(() {
       _fetchingState = StepState.inProgress;
     });
 
-    // 1. Start analysis (POST /analyze)
-    repository.Analysis(widget.url!).then((startResponse) {
+    final Future<AnalysisStartResponse> analysisFuture = (widget.imagePath != null && widget.imagePath!.isNotEmpty)
+        ? repository.AnalyzeImage(widget.imagePath!)
+        : repository.Analysis(widget.url!);
+
+    // 1. Start analysis
+    analysisFuture.then((startResponse) {
       if (!mounted) return;
 
       // 2. Start polling based on the returned jobId and pollAfterMs
       _pollJobStatus(startResponse.jobId, startResponse.pollAfterMs);
     }).catchError((error) {
       if (mounted) {
+        String msg = error.toString();
+        if (error is AppException) {
+          msg = error.message;
+        }
         setState(() {
           _hasError = true;
-          _errorMessage = error.toString();
+          _errorMessage = msg;
         });
       }
     });
@@ -122,9 +137,13 @@ class _AnalysisDataScreenState extends ConsumerState<AnalysisDataScreen> {
         });
       }).catchError((error) {
         if (mounted) {
+          String msg = error.toString();
+          if (error is AppException) {
+            msg = error.message;
+          }
           setState(() {
             _hasError = true;
-            _errorMessage = error.toString();
+            _errorMessage = msg;
           });
         }
       });
@@ -139,6 +158,9 @@ class _AnalysisDataScreenState extends ConsumerState<AnalysisDataScreen> {
 
       // Refresh the products list to include the newly analyzed product
       ref.read(productsProvider.notifier).refresh().then((_) {
+        // Invalidate profileFutureProvider to update capacity counts
+        ref.invalidate(profileFutureProvider);
+
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(
@@ -155,9 +177,13 @@ class _AnalysisDataScreenState extends ConsumerState<AnalysisDataScreen> {
       });
     }).catchError((error) {
       if (mounted) {
+        String msg = error.toString();
+        if (error is AppException) {
+          msg = error.message;
+        }
         setState(() {
           _hasError = true;
-          _errorMessage = 'Failed to fetch analysis result: $error';
+          _errorMessage = 'Failed to fetch analysis result: $msg';
         });
       }
     });
@@ -198,7 +224,7 @@ class _AnalysisDataScreenState extends ConsumerState<AnalysisDataScreen> {
                     padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
                     child: Row(
                       children: [
-                        _buildRoundBackButton(
+                        RoundBackButton(
                           onTap: () => Navigator.pop(context),
                         ),
                         const Expanded(
@@ -230,42 +256,77 @@ class _AnalysisDataScreenState extends ConsumerState<AnalysisDataScreen> {
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
                           if (_hasError) ...[
-                            const Icon(
-                              Icons.error_outline_rounded,
-                              size: 80,
-                              color: Colors.red,
-                            ),
-                            const SizedBox(height: 24),
-                            const Text(
-                              "Analysis Failed",
-                              style: TextStyle(
-                                fontSize: 22,
-                                fontWeight: FontWeight.bold,
-                                color: Color(0xFF1E293B),
-                              ),
-                            ),
-                            const SizedBox(height: 12),
-                            Text(
-                              _errorMessage,
-                              textAlign: TextAlign.center,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                color: Colors.redAccent,
-                              ),
-                            ),
-                            const SizedBox(height: 32),
-                            ElevatedButton(
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFF10B981),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
+                            Center(
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(horizontal: 24),
+                                child: Column(
+                                  mainAxisAlignment: MainAxisAlignment.center,
+                                  children: [
+                                    Container(
+                                      width: 110,
+                                      height: 110,
+                                      decoration: BoxDecoration(
+                                        color: Colors.red.withOpacity(.08),
+                                        shape: BoxShape.circle,
+                                      ),
+                                      child: const Icon(
+                                        Icons.search_off_rounded,
+                                        size: 60,
+                                        color: Colors.redAccent,
+                                      ),
+                                    ),
+
+                                    const SizedBox(height: 28),
+
+                                    const Text(
+                                      "Product Not Found",
+                                      style: TextStyle(
+                                        fontSize: 24,
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF1E293B),
+                                      ),
+                                    ),
+
+                                    const SizedBox(height: 12),
+
+                                    const Text(
+                                      "We couldn't analyze this product.\n"
+                                          "Please check the product URL or try another one.",
+                                      textAlign: TextAlign.center,
+                                      style: TextStyle(
+                                        fontSize: 15,
+                                        height: 1.6,
+                                        color: Color(0xFF64748B),
+                                      ),
+                                    ),
+
+                                    const SizedBox(height: 24),
+
+                                    SizedBox(
+                                      width: double.infinity,
+                                      height: 52,
+                                      child: ElevatedButton.icon(
+                                        onPressed: () => Navigator.pop(context),
+                                        icon: const Icon(Icons.arrow_back_rounded),
+                                        label: const Text(
+                                          "Try Another Product",
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 16,
+                                          ),
+                                        ),
+                                        style: ElevatedButton.styleFrom(
+                                          elevation: 0,
+                                          backgroundColor: const Color(0xFF10B981),
+                                          foregroundColor: Colors.white,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(14),
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                  ],
                                 ),
-                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
-                              ),
-                              onPressed: () => Navigator.pop(context),
-                              child: const Text(
-                                "Go Back",
-                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                               ),
                             ),
                           ] else ...[
@@ -345,25 +406,7 @@ class _AnalysisDataScreenState extends ConsumerState<AnalysisDataScreen> {
     );
   }
 
-  // Rounded Back Button UI Widget
-  Widget _buildRoundBackButton({required VoidCallback onTap}) {
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        height: 44,
-        width: 44,
-        decoration: const BoxDecoration(
-          color: Colors.white,
-          shape: BoxShape.circle,
-        ),
-        child: const Icon(
-          Icons.arrow_back_ios_new,
-          color: Color(0xFF1E293B),
-          size: 18,
-        ),
-      ),
-    );
-  }
+
 
   // Progress Step List Item UI Widget
   Widget _buildProgressStep({required String label, required StepState state}) {

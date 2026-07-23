@@ -2,14 +2,17 @@ import 'package:flutter/animation.dart';
 import 'package:flutter/cupertino.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:messageapp/Features/Me/presentation/screens/change_password/change_password_screen.dart';
 import 'package:messageapp/Features/Me/presentation/screens/edit_profile/edit_profile_screen.dart';
 import 'package:messageapp/Features/Me/presentation/screens/notifications/notification_list_screen.dart';
 import 'package:messageapp/Features/Me/presentation/screens/notifications/notification_settings_screen.dart';
 import 'package:messageapp/Features/Me/presentation/screens/security_privacy/security_privacy_screen.dart';
 import 'package:messageapp/Features/ProductDetails/data/models/product_model.dart';
 import 'package:messageapp/Features/ProductDetails/product_detals.dart';
+import 'package:messageapp/Features/auth/presentation/screens/Auth/email_verification_screen.dart';
 import 'package:messageapp/Features/auth/presentation/screens/Auth/login_screen.dart';
 import 'package:messageapp/Features/auth/presentation/screens/Auth/register_screen.dart';
+import '../../Features/Me/presentation/screens/Help_Support/help_support.dart';
 import '../../Features/Search/screen/search_screen.dart';
 import '../../Features/auth/presentation/screens/splash/splash_screen.dart';
 import '../../Features/bottom_nav_bar/presentation/screens/bottom_manu_wrappers.dart';
@@ -97,10 +100,30 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         path: AppPaths.search_product,
         name: AppRoutes.search_product,
         pageBuilder: (context, state) {
+          String? url;
+          String? imagePath;
+          if (state.extra is String) {
+            url = state.extra as String;
+          } else if (state.extra is Map<String, dynamic>) {
+            final map = state.extra as Map<String, dynamic>;
+            url = map['url'] as String?;
+            imagePath = map['imagePath'] as String?;
+          }
+          return buildSlideTransitionPage(
+            key: state.pageKey,
+            child: AnalysisDataScreen(url: url, imagePath: imagePath),
+          );
+        },
+      ),
+
+      GoRoute(
+        path: AppPaths.help_support,
+        name: AppRoutes.help_support,
+        pageBuilder: (context, state) {
           final url = state.extra as String?;
           return buildSlideTransitionPage(
             key: state.pageKey,
-            child: AnalysisDataScreen(url: url),
+            child: HelpSupport(),
           );
         },
       ),
@@ -124,6 +147,17 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         ),
       ),
 
+      GoRoute(
+        path: AppPaths.emailVerification,
+        name: AppRoutes.emailVerification,
+        pageBuilder: (context, state) {
+          final email = state.extra is String ? state.extra as String : '';
+          return buildSlideTransitionPage(
+            key: state.pageKey,
+            child: EmailVerificationScreen(email: email),
+          );
+        },
+      ),
 
       GoRoute(
         path: AppPaths.notification_setting,
@@ -167,6 +201,15 @@ final appRouterProvider = Provider<GoRouter>((ref) {
         pageBuilder: (context, state) => buildSlideTransitionPage(
           key: state.pageKey,
           child: EditProfileScreen(),
+        ),
+      ),
+
+      GoRoute(
+        path: AppPaths.changePassword,
+        name: AppRoutes.changePassword,
+        pageBuilder: (context, state) => buildSlideTransitionPage(
+          key: state.pageKey,
+          child: const ChangePasswordScreen(),
         ),
       ),
 

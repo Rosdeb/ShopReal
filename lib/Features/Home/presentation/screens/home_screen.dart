@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:messageapp/core/constants/app_constants.dart';
 import 'package:messageapp/core/constants/asset_constants.dart';
 import 'package:messageapp/core/utils/app_colour.dart';
@@ -516,7 +517,22 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ),
                 child: IconButton(
                   icon: SvgPicture.asset("assets/icons/camera.svg"),
-                  onPressed: () {},
+                  onPressed: ()async {
+                    final picker = ImagePicker();
+                    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
+                    if(image !=null && mounted){
+                      context.push(
+                        AppPaths.search_product,
+                        extra: {
+                          'imagePath' : image.path
+                        },
+                      );
+
+                      print("imagePath: $image");
+
+
+                    }
+                  },
                 ),
               ),
             ],
@@ -530,6 +546,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               if (url.isNotEmpty) {
                 _urlController.clear();
               }
+              if(url.isEmpty){
+                return;
+              }
+
               context.push(
                 AppPaths.search_product,
                 extra: url.isNotEmpty ? url : null,

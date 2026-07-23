@@ -2,6 +2,7 @@ import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 
 import '../../../../../components/AppText/appText.dart';
+import '../../../../../core/utils/app_colour.dart';
 import '../../widgets/notification_widgets.dart';
 
 class NotificationSettingsScreen extends StatefulWidget {
@@ -51,24 +52,20 @@ class _NotificationSettingsScreenState
               child: Padding(
                 padding: const EdgeInsets.symmetric(
                   horizontal: 16.0,
-                  vertical: 10.0,
                 ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Row(
                       children: [
-                        IconButton(
-                          onPressed: () {
-                            Navigator.pop(context);
-                          },
-                          icon: Icon(Icons.arrow_back_ios_new, size: 21),
+                        _buildRoundBackButton(
+                          onTap: () => Navigator.pop(context),
                         ),
                         const Spacer(),
                         Align(
                           alignment: Alignment.topCenter,
                           child: AppText(
-                            "Profile",
+                            "Notifications Setting",
                             style: const TextStyle(
                               fontSize: 22,
                               fontWeight: FontWeight.bold,
@@ -81,7 +78,7 @@ class _NotificationSettingsScreenState
                         const SizedBox(width: 50),
                       ],
                     ),
-
+                    const SizedBox(height: 20),
                     Container(
                       decoration: BoxDecoration(
                         color: Colors.white,
@@ -156,4 +153,32 @@ class _NotificationSettingsScreenState
       ),
     );
   }
+
+  Widget _buildRoundBackButton({required VoidCallback onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        height: 44,
+        width: 44,
+        decoration: BoxDecoration(
+          color: Colors.white,
+          shape: BoxShape.circle,
+          boxShadow: [
+            BoxShadow(
+              color: AppColors.Black.withValues(alpha: 0.15),
+              blurRadius: 2,
+              offset: const Offset(0, 3),
+            ),
+          ],
+        ),
+        child: const Icon(
+          Icons.arrow_back_ios_new,
+          color: Color(0xFF1E293B),
+          size: 18,
+        ),
+      ),
+    );
+  }
+
+
 }
