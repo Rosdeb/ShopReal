@@ -1,13 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:messageapp/Features/ProductDetails/widgets/price_chat_shimmer.dart';
 import 'package:messageapp/core/constants/asset_constants.dart';
+import '../../components/ExpandableDescription.dart';
 import '../../core/utils/app_colour.dart';
+import 'data/models/product_model.dart';
+import 'providers/prodcut_providers.dart';
+import '../History/presentation/providers/save_providers.dart';
 
-class ProductDetailsScreen extends StatelessWidget {
-  const ProductDetailsScreen({super.key});
+class ProductDetailsScreen extends ConsumerWidget {
+  final ScannedProduct product;
+  const ProductDetailsScreen({super.key, required this.product});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
+    final priceHistory = ref.watch(priceHistoryProvider(product.id));
+    final savedProductsState = ref.watch(savedProductsProvider);
+    final isSaved = savedProductsState.value?.bookmarks.any((b) => b.productId == product.id) ?? false;
+
     return Scaffold(
       body: Container(
         decoration: const BoxDecoration(
@@ -54,8 +65,10 @@ class ProductDetailsScreen extends StatelessWidget {
                           ),
                         ),
                         _buildRoundButton(
-                          icon: Assets.heart,
-                          onTap: () {},
+                          icon: isSaved ? Assets.heart_fillup : Assets.heart,
+                          onTap: () {
+                            ref.read(savedProductsProvider.notifier).toggleSave(product);
+                          },
                         ),
                       ],
                     ),
@@ -89,16 +102,18 @@ class ProductDetailsScreen extends StatelessWidget {
                             ),
                             child: Column(
                               children: [
-                                 ClipRRect(
-                                    borderRadius: BorderRadius.circular(12),
-                                    child: Image.network(
-                                      'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRqqdAMrQcJJr0-KSmcWeuYoJRYi6KSAczCOocvlPPg4A&s=10', // Replace with your image asset or dynamic URL
-                                      width: double.infinity,
-                                      fit: BoxFit.cover,
-                                      height: 200,
-                                      errorBuilder: (context, error, stackTrace) => const Icon(Icons.broken_image, size: 80, color: Colors.grey),
-                                    ),
-                                  ),
+                                  ClipRRect(
+                                     borderRadius: BorderRadius.circular(12),
+                                     child: Image.network(
+                                       product.imageUrls.isNotEmpty
+                                           ? product.imageUrls.first
+                                           : 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRqqdAMrQcJJr0-KSmcWeuYoJRYi6KSAczCOocvlPPg4A&s=10',
+                                       width: double.infinity,
+                                       fit: BoxFit.cover,
+                                       height: 200,
+                                       errorBuilder: (context, error, stackTrace) => const Icon(Icons.broken_image, size: 80, color: Colors.grey),
+                                     ),
+                                   ),
                                 const SizedBox(height: 12),
                                 _buildInsightAnalyticsCard(),
                                 const SizedBox(height: 12),
@@ -111,7 +126,7 @@ class ProductDetailsScreen extends StatelessWidget {
 
 
                           // 3. Price Chart Card
-                          _buildPriceChartCard(),
+                          _buildPriceChartCard(priceHistory),
                           const SizedBox(height: 12),
 
                           // 4. Product Confidence Indicator Card
@@ -135,7 +150,7 @@ class ProductDetailsScreen extends StatelessWidget {
   }
 
   // Round Custom Button Helper
-  Widget _buildRoundButton({required String icon, required VoidCallback onTap}) {
+  Widget _buildRoundButton({required String icon, required VoidCallback onTap, Color? iconColor}) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -154,13 +169,17 @@ class ProductDetailsScreen extends StatelessWidget {
           color: Colors.white,
           shape: BoxShape.circle,
         ),
-        child: SvgPicture.asset(icon,),
+        child: SvgPicture.asset(
+          icon,
+          colorFilter: iconColor != null ? ColorFilter.mode(iconColor, BlendMode.srcIn) : null,
+        ),
       ),
     );
   }
 
   // Insight Analytics Card Widget
   Widget _buildInsightAnalyticsCard() {
+    final currencySymbol = product.currency == 'USD' ? '\$' : '${product.currency} ';
     return  Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -178,20 +197,20 @@ class ProductDetailsScreen extends StatelessWidget {
               const SizedBox(width: 8),
               const Text(
                 "Insight Analytics",
-                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF64748B)),
+                style: TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: Color(0xFF061B21)),
               ),
             ],
           ),
           const SizedBox(height: 10),
-          const Text(
-            "Mini Multi-Functional",
-            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
-          ),
-          const SizedBox(height: 8),
-          const Text(
-            "Non-stick coating, for food contact. Multi-function cooking, delicacy. Two levels of firepower, firepower can be big or small...",
-            style: TextStyle(fontSize: 12,fontWeight: FontWeight.w500, color: Color(0xFF94A3B8), height: 1.4),
-          ),
+          Expandabledescription(
+            text: product.description ?? "No description available.",
+            ),
+
+          // Text(
+          //   product.title,
+          //   style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1E293B),letterSpacing: 0),
+          // ),
+
           const Padding(
             padding: EdgeInsets.symmetric(vertical: 12.0),
             child: Divider(color: Color(0xFF525151), height: 1),
@@ -199,8 +218,8 @@ class ProductDetailsScreen extends StatelessWidget {
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              _buildPriceRow("MSRP:", "\$110"),
-              _buildPriceRow("Source Price:", "\$110.90"),
+              _buildPriceRow("MSRP:", "$currencySymbol${product.originalPrice ?? product.price ?? 0.0}"),
+              _buildPriceRow("Source Price:", "$currencySymbol${product.price ?? 0.0}"),
             ],
           )
         ],
@@ -219,7 +238,7 @@ class ProductDetailsScreen extends StatelessWidget {
   }
 
   // Custom Bar Chart Card Widget
-  Widget _buildPriceChartCard() {
+  Widget _buildPriceChartCard(AsyncValue<List<PriceHistoryItem>> priceHistoryAsync) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -249,33 +268,122 @@ class ProductDetailsScreen extends StatelessWidget {
                     style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
                   ),
                   const SizedBox(height: 2),
-                  const Text("Last 7 day", style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8))),
+                  const Text("History Log", style: TextStyle(fontSize: 11, color: Color(0xFF94A3B8))),
                 ],
               ),
-              Row(
-                children: [
-                  const Text("November", style: TextStyle(fontSize: 13, color: Color(0xFF1E293B), fontWeight: FontWeight.w500)),
-                  const Icon(Icons.keyboard_arrow_down, color: Color(0xFF64748B), size: 18),
-                ],
-              )
             ],
           ),
           const SizedBox(height: 28),
 
-          // Beautiful Custom Bar Chart Visualizer
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              _buildBar(day: "12", height: 35),
-              _buildBar(day: "13", height: 50),
-              _buildBar(day: "14", height: 45),
-              _buildBar(day: "15", height: 75, isSelected: true, tooltip: "3,680"),
-              _buildBar(day: "16", height: 55),
-              _buildBar(day: "17", height: 30, isVeryLight: true),
-              _buildBar(day: "18", height: 50, isVeryLight: true),
-            ],
-          )
+          priceHistoryAsync.when(
+            data: (history) {
+              if (history.isEmpty) {
+                return const Center(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(vertical: 20),
+                    child: Text(
+                      "No price history records",
+                      style: TextStyle(color: Color(0xFF64748B), fontSize: 13),
+                    ),
+                  ),
+                );
+              }
+
+              // Take last 7 items for chart
+              final chartItems = history.length > 7
+                  ? history.sublist(history.length - 7)
+                  : history;
+
+              // Find max price to scale heights (avoid divide by zero)
+              final maxPrice = chartItems
+                  .map((e) => e.price)
+                  .fold<double>(0.01, (prev, price) => price > prev ? price : prev);
+
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: chartItems.asMap().entries.map((entry) {
+                  final idx = entry.key;
+                  final item = entry.value;
+                  final dayStr = item.date.split('-').last;
+                  final currencySymbol = item.currency == 'USD' ? '\$' : '${item.currency} ';
+                  final tooltipStr = "$currencySymbol${item.price}";
+
+                  // Compute scale height (min 15, max 80)
+                  final double calculatedHeight = (item.price / maxPrice) * 75.0;
+                  final double barHeight = calculatedHeight < 15 ? 15 : calculatedHeight;
+
+                  // Make the last item selected/active
+                  final isLast = idx == chartItems.length - 1;
+
+                  return _buildBar(
+                    day: dayStr,
+                    height: barHeight,
+                    isSelected: isLast,
+                    tooltip: isLast ? tooltipStr : null,
+                  );
+                }).toList(),
+              );
+            },
+            loading: () {
+              final shimmerColor = Colors.grey.shade200;
+              final dummyHeights = [30.0, 50.0, 25.0, 60.0, 40.0, 70.0, 55.0];
+              return Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: dummyHeights.asMap().entries.map((entry) {
+                  final idx = entry.key;
+                  final height = entry.value;
+                  final isLast = idx == dummyHeights.length - 1;
+
+                  return Column(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      if (isLast) ...[
+                        Container(
+                          width: 45,
+                          height: 16,
+                          decoration: BoxDecoration(
+                            color: shimmerColor,
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                      ] else ...[
+                        const SizedBox(height: 20),
+                      ],
+                      Container(
+                        height: height,
+                        width: 24,
+                        decoration: BoxDecoration(
+                          color: shimmerColor,
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Container(
+                        width: 16,
+                        height: 11,
+                        decoration: BoxDecoration(
+                          color: shimmerColor,
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                      ),
+                    ],
+                  );
+                }).toList(),
+              );
+            },
+            error: (err, stack) => const Center(
+              child: Padding(
+                padding: EdgeInsets.symmetric(vertical: 20),
+                child: Text(
+                  "Failed to load price history",
+                  style: TextStyle(color: Colors.red, fontSize: 12),
+                ),
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -333,6 +441,28 @@ class ProductDetailsScreen extends StatelessWidget {
 
   // Product Confidence Progress Widget
   Widget _buildProductConfidenceCard() {
+    // Get confidence score from latestScan
+    final score = product.latestScan?.confidenceScore ?? 0;
+    final progressValue = score / 100.0;
+
+    // Define colors and labels based on confidence ranges
+    final Color progressColor;
+    final String probabilityLabel;
+    
+    if (score >= 90) {
+      progressColor = const Color(0xFF2563EB); // Blue
+      probabilityLabel = "Very High";
+    } else if (score >= 70) {
+      progressColor = const Color(0xFF10B981); // Green
+      probabilityLabel = "High Prob.";
+    } else if (score >= 40) {
+      progressColor = const Color(0xFFF59E0B); // Orange/Yellow
+      probabilityLabel = "Med. Prob.";
+    } else {
+      progressColor = const Color(0xFFEF4444); // Red
+      probabilityLabel = "Low Prob.";
+    }
+
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -358,22 +488,22 @@ class ProductDetailsScreen extends StatelessWidget {
               fit: StackFit.expand,
               children: [
                 CircularProgressIndicator(
-                  value: 0.65,
+                  value: progressValue,
                   strokeWidth: 6,
                   backgroundColor: const Color(0xFFF1F5F9),
-                  valueColor: const AlwaysStoppedAnimation<Color>(Color(0xFF2563EB)),
+                  valueColor: AlwaysStoppedAnimation<Color>(progressColor),
                   strokeCap: StrokeCap.round,
                 ),
                 Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      const Text(
-                        "2,181",
-                        style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
+                      Text(
+                        "$score%",
+                        style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Color(0xFF1E293B)),
                       ),
                       Text(
-                        "High Prob.",
+                        probabilityLabel,
                         style: TextStyle(fontSize: 8, color: const Color(0xFF64748B).withOpacity(0.8)),
                       ),
                     ],
@@ -393,12 +523,12 @@ class ProductDetailsScreen extends StatelessWidget {
                 ),
                 const SizedBox(height: 4),
                 RichText(
-                  text: const TextSpan(
-                    style: TextStyle(fontSize: 12, color: Color(0xFF64748B), height: 1.3),
+                  text: TextSpan(
+                    style: const TextStyle(fontSize: 12, color: Color(0xFF64748B), height: 1.3),
                     children: [
-                      TextSpan(text: "Identified on "),
-                      TextSpan(text: "0", style: TextStyle(color: Color(0xFF10B981), fontWeight: FontWeight.bold)),
-                      TextSpan(text: " marketplace including global wholesale distributors."),
+                      const TextSpan(text: "Identified on "),
+                      TextSpan(text: "${product.scanCount}", style: const TextStyle(color: Color(0xFF10B981), fontWeight: FontWeight.bold)),
+                      const TextSpan(text: " marketplace including global wholesale distributors."),
                     ],
                   ),
                 ),
@@ -412,6 +542,24 @@ class ProductDetailsScreen extends StatelessWidget {
 
   // Quad Grid Details Layout Widget
   Widget _buildQuadMetricsGrid() {
+    final domainAge = product.domain?.domainAgeDays;
+    final String ageStr;
+    if (domainAge != null) {
+      if (domainAge < 365) {
+        ageStr = "$domainAge days";
+      } else {
+        final years = domainAge ~/ 365;
+        final remainingDays = domainAge % 365;
+        ageStr = remainingDays == 0
+            ? "$years ${years == 1 ? 'year' : 'years'}"
+            : "$years ${years == 1 ? 'year' : 'years'} $remainingDays ${remainingDays == 1 ? 'day' : 'days'}";
+      }
+    } else {
+      ageStr = "Unknown";
+    }
+    final trustScore = product.domain?.trustScore;
+    final trustStr = trustScore != null ? "$trustScore%" : "N/A";
+
     return Column(
       children: [
         Row(
@@ -421,8 +569,8 @@ class ProductDetailsScreen extends StatelessWidget {
                 icon: Icons.storefront_outlined,
                 iconColor: const Color(0xFFF97316),
                 bgColor: const Color(0xFFFFF7ED),
-                title: "Marketplaces",
-                value: "0",
+                title: "Source Store",
+                value: product.storeName ?? product.domain?.hostname ?? "Unknown",
               ),
             ),
             const SizedBox(width: 12),
@@ -431,8 +579,8 @@ class ProductDetailsScreen extends StatelessWidget {
                 icon: Icons.dashboard_outlined,
                 iconColor: const Color(0xFF10B981),
                 bgColor: const Color(0xFFECFDF5),
-                title: "Gross markup",
-                value: "44%",
+                title: "Trust Score",
+                value: trustStr,
               ),
             ),
           ],
@@ -445,8 +593,8 @@ class ProductDetailsScreen extends StatelessWidget {
                 icon: Icons.verified_user_outlined,
                 iconColor: const Color(0xFF10B981),
                 bgColor: const Color(0xFFECFDF5),
-                title: "Whois status",
-                value: "Protected",
+                title: "SSL Status",
+                value: product.domain?.sslValid == true ? "Valid SSL" : "Invalid/No SSL",
               ),
             ),
             const SizedBox(width: 12),
@@ -456,7 +604,7 @@ class ProductDetailsScreen extends StatelessWidget {
                 iconColor: const Color(0xFF3B82F6),
                 bgColor: const Color(0xFFEFF6FF),
                 title: "Domain age",
-                value: "Unknown",
+                value: ageStr,
               ),
             ),
           ],

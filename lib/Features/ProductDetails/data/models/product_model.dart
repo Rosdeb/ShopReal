@@ -211,7 +211,7 @@ class ScannedProduct {
       price: _double(json['price']),
       originalPrice: _double(json['originalPrice']),
       currency: _str(json['currency']) ?? 'USD',
-      imageUrls: _strList(json['imageUrls']),
+      imageUrls: json['imageUrls'] != null ? _strList(json['imageUrls']) : _strList(json['images']),
       sku: _str(json['sku']),
       brand: _str(json['brand']),
       category: _str(json['category']),
@@ -222,9 +222,9 @@ class ScannedProduct {
       scanCount: _int(json['scanCount']) ?? 0,
       createdAt: _date(json['createdAt']),
       updatedAt: _date(json['updatedAt']),
-      domain: json['domain'] == null
-          ? null
-          : ProductDomain.fromJson(_map(json['domain'])!),
+      domain: (json['domain'] != null && json['domain'] is Map)
+          ? ProductDomain.fromJson(_map(json['domain'])!)
+          : null,
       scans: _list(json['scans'], ProductScan.fromJson),
     );
   }
@@ -836,4 +836,34 @@ class SourceBreakdown {
   }
 
   Map<String, dynamic> toJson() => {'ai': ai, 'rules': rules};
+}
+
+class PriceHistoryItem {
+  final String date;
+  final double price;
+  final String currency;
+  final DateTime fetchedAt;
+
+  const PriceHistoryItem({
+    required this.date,
+    required this.price,
+    required this.currency,
+    required this.fetchedAt,
+  });
+
+  factory PriceHistoryItem.fromJson(Map<String, dynamic> json) {
+    return PriceHistoryItem(
+      date: _str(json['date']) ?? '',
+      price: _double(json['price']) ?? 0.0,
+      currency: _str(json['currency']) ?? 'USD',
+      fetchedAt: _date(json['fetchedAt']) ?? DateTime.now(),
+    );
+  }
+
+  Map<String, dynamic> toJson() => {
+    'date': date,
+    'price': price,
+    'currency': currency,
+    'fetchedAt': fetchedAt.toIso8601String(),
+  };
 }

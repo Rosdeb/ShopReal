@@ -12,6 +12,7 @@ class ApiEndpoints {
 
   // Example resource
   static const String profile = '/user/self/in';
+  static const String analysis = '/analyze';
   static const String notification = '/notification';
   static const String product_scan = '/products/scan';
   static const String get_product = '/products/{id}';

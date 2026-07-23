@@ -1,7 +1,167 @@
+import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../../Home/data/repositories/product_repository.dart';
+import '../../ProductDetails/providers/prodcut_providers.dart';
+import '../../../../core/services/api_client.dart';
+import '../../auth/presentation/providers/login_providers.dart';
+import 'package:go_router/go_router.dart';
+import 'package:messageapp/core/constants/app_constants.dart';
 
-class AnalysisDataScreen extends StatelessWidget {
-  const AnalysisDataScreen({super.key});
+class AnalysisDataScreen extends ConsumerStatefulWidget {
+  final String? url;
+  const AnalysisDataScreen({super.key, this.url});
+
+  @override
+  ConsumerState<AnalysisDataScreen> createState() => _AnalysisDataScreenState();
+}
+
+class _AnalysisDataScreenState extends ConsumerState<AnalysisDataScreen> {
+  int _progress = 0;
+  Timer? _timer;
+  bool _hasError = false;
+  String _errorMessage = '';
+
+  StepState _fetchingState = StepState.pending;
+  StepState _checkingState = StepState.pending;
+  StepState _analysingState = StepState.pending;
+  StepState _calculatingState = StepState.pending;
+  StepState _buildingState = StepState.pending;
+
+  @override
+  void initState() {
+    super.initState();
+    if (widget.url != null && widget.url!.isNotEmpty) {
+      _startAnalysisJob();
+    } else {
+      _hasError = true;
+      _errorMessage = 'No URL provided for analysis.';
+    }
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void _startAnalysisJob() {
+    final repository = ProductRepository(ref.read(apiClientProvider));
+    
+    // Set first step in progress
+    setState(() {
+      _fetchingState = StepState.inProgress;
+    });
+
+    // 1. Start analysis (POST /analyze)
+    repository.Analysis(widget.url!).then((startResponse) {
+      if (!mounted) return;
+
+      // 2. Start polling based on the returned jobId and pollAfterMs
+      _pollJobStatus(startResponse.jobId, startResponse.pollAfterMs);
+    }).catchError((error) {
+      if (mounted) {
+        setState(() {
+          _hasError = true;
+          _errorMessage = error.toString();
+        });
+      }
+    });
+  }
+
+  void _pollJobStatus(String jobId, int pollIntervalMs) {
+    _timer = Timer(Duration(milliseconds: pollIntervalMs), () {
+      if (!mounted) return;
+      final repository = ProductRepository(ref.read(apiClientProvider));
+
+      repository.getAnalysisJobStatus(jobId).then((job) {
+        if (!mounted) return;
+
+        setState(() {
+          _progress = job.progress;
+
+          // Map progress directly to UI checklist steps
+          if (_progress >= 20) {
+            _fetchingState = StepState.completed;
+            if (_progress < 40) _checkingState = StepState.inProgress;
+          } else {
+            _fetchingState = StepState.inProgress;
+          }
+
+          if (_progress >= 40) {
+            _checkingState = StepState.completed;
+            if (_progress < 60) _analysingState = StepState.inProgress;
+          }
+
+          if (_progress >= 60) {
+            _analysingState = StepState.completed;
+            if (_progress < 80) _calculatingState = StepState.inProgress;
+          }
+
+          if (_progress >= 80) {
+            _calculatingState = StepState.completed;
+            if (_progress < 100) _buildingState = StepState.inProgress;
+          }
+
+          // Handle complete / error states
+          if (job.status.toLowerCase() == 'completed' || _progress >= 100) {
+            _fetchingState = StepState.completed;
+            _checkingState = StepState.completed;
+            _analysingState = StepState.completed;
+            _calculatingState = StepState.completed;
+            _buildingState = StepState.completed;
+            _progress = 100;
+            _onAnalysisComplete(jobId);
+          } else if (job.status.toLowerCase() == 'failed' || job.error != null) {
+            _hasError = true;
+            _errorMessage = job.error ?? 'Analysis job failed on server.';
+          } else {
+            // Recursively poll status again after interval
+            _pollJobStatus(jobId, pollIntervalMs);
+          }
+        });
+      }).catchError((error) {
+        if (mounted) {
+          setState(() {
+            _hasError = true;
+            _errorMessage = error.toString();
+          });
+        }
+      });
+    });
+  }
+
+  void _onAnalysisComplete(String jobId) {
+    final repository = ProductRepository(ref.read(apiClientProvider));
+    
+    repository.getAnalysisJobResult(jobId).then((scannedProduct) {
+      if (!mounted) return;
+
+      // Refresh the products list to include the newly analyzed product
+      ref.read(productsProvider.notifier).refresh().then((_) {
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Analysis completed successfully!'),
+              backgroundColor: Color(0xFF10B981),
+            ),
+          );
+          
+          context.pushReplacement(
+            AppPaths.product_details,
+            extra: scannedProduct,
+          );
+        }
+      });
+    }).catchError((error) {
+      if (mounted) {
+        setState(() {
+          _hasError = true;
+          _errorMessage = 'Failed to fetch analysis result: $error';
+        });
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -69,73 +229,108 @@ class AnalysisDataScreen extends StatelessWidget {
                         mainAxisAlignment: MainAxisAlignment.center,
                         crossAxisAlignment: CrossAxisAlignment.center,
                         children: [
-                          // 3D Magnifying Glass Illustration
-                          Image.asset("assets/images/search.png",
-                            fit: BoxFit.contain,
-                            errorBuilder: (context, error, stackTrace) => Container(
-                              height: 200,
-                              width: 200,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFFEF08A).withValues(alpha: 0.3),
-                                shape: BoxShape.circle,
-                              ),
-                              child: const Icon(
-                                Icons.search,
-                                size: 100,
-                                color: Color(0xFFF59E0B),
+                          if (_hasError) ...[
+                            const Icon(
+                              Icons.error_outline_rounded,
+                              size: 80,
+                              color: Colors.red,
+                            ),
+                            const SizedBox(height: 24),
+                            const Text(
+                              "Analysis Failed",
+                              style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF1E293B),
                               ),
                             ),
-                          ),
-                          const SizedBox(height: 32),
-
-                          // Progress Percentage Text
-                          const Text(
-                            "20% Complete",
-                            style: TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xFF1E293B),
+                            const SizedBox(height: 12),
+                            Text(
+                              _errorMessage,
+                              textAlign: TextAlign.center,
+                              style: const TextStyle(
+                                fontSize: 14,
+                                color: Colors.redAccent,
+                              ),
                             ),
-                          ),
-                          const SizedBox(height: 32),
-
-                          // Progress Status Checklists
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // 1. Completed state
-                              _buildProgressStep(
-                                label: "Fetching product data",
-                                state: StepState.completed,
+                            const SizedBox(height: 32),
+                            ElevatedButton(
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF10B981),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                               ),
-                              const SizedBox(height: 16),
-
-                              // 2. In-progress state
-                              _buildProgressStep(
-                                label: "Checking legitimacy signals",
-                                state: StepState.inProgress,
+                              onPressed: () => Navigator.pop(context),
+                              child: const Text(
+                                "Go Back",
+                                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                               ),
-                              const SizedBox(height: 16),
-
-                              // 3. Pending/Inactive states
-                              _buildProgressStep(
-                                label: "Analysing supplier info",
-                                state: StepState.pending,
+                            ),
+                          ] else ...[
+                            // 3D Magnifying Glass Illustration
+                            Image.asset(
+                              "assets/images/search.png",
+                              fit: BoxFit.contain,
+                              errorBuilder: (context, error, stackTrace) => Container(
+                                height: 200,
+                                width: 200,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFFEF08A).withValues(alpha: 0.3),
+                                  shape: BoxShape.circle,
+                                ),
+                                child: const Icon(
+                                  Icons.search,
+                                  size: 100,
+                                  color: Color(0xFFF59E0B),
+                                ),
                               ),
-                              const SizedBox(height: 16),
+                            ),
+                            const SizedBox(height: 32),
 
-                              _buildProgressStep(
-                                label: "Calculating trust score",
-                                state: StepState.pending,
+                            // Progress Percentage Text
+                            Text(
+                              "$_progress% Complete",
+                              style: const TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w600,
+                                color: Color(0xFF1E293B),
                               ),
-                              const SizedBox(height: 16),
+                            ),
+                            const SizedBox(height: 32),
 
-                              _buildProgressStep(
-                                label: "Building final report",
-                                state: StepState.pending,
-                              ),
-                            ],
-                          ),
+                            // Progress Status Checklists
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                _buildProgressStep(
+                                  label: "Fetching product data",
+                                  state: _fetchingState,
+                                ),
+                                const SizedBox(height: 16),
+                                _buildProgressStep(
+                                  label: "Checking legitimacy signals",
+                                  state: _checkingState,
+                                ),
+                                const SizedBox(height: 16),
+                                _buildProgressStep(
+                                  label: "Analysing supplier info",
+                                  state: _analysingState,
+                                ),
+                                const SizedBox(height: 16),
+                                _buildProgressStep(
+                                  label: "Calculating trust score",
+                                  state: _calculatingState,
+                                ),
+                                const SizedBox(height: 16),
+                                _buildProgressStep(
+                                  label: "Building final report",
+                                  state: _buildingState,
+                                ),
+                              ],
+                            ),
+                          ],
                           const SizedBox(height: 40),
                         ],
                       ),

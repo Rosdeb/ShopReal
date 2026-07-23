@@ -34,6 +34,7 @@ class Assets {
   static const String google = '$_iconPath/google.svg';
   static const String save2 = '$_iconPath/save-2.svg';
   static const String heart = '$_iconPath/heart.svg';
+  static const String heart_fillup = '$_iconPath/heart_fill.svg';
   static const String shopreal_icon = '$_iconPath/shopreal_icon.png';
 
   // ================================

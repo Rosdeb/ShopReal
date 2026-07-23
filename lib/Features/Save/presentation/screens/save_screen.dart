@@ -1,22 +1,18 @@
 import 'dart:ui';
-
 import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:go_router/go_router.dart';
 import 'package:messageapp/core/constants/app_constants.dart';
-
 import '../../../../components/AppText/appText.dart';
 import '../../../../components/CustomTextField/CustomTextfield.dart';
 import '../../../../components/ItemCard/item_card.dart';
 import '../../../../core/constants/asset_constants.dart';
 import '../../../../core/utils/app_colour.dart';
-import '../providers/contact_providers.dart';
-import '../widgets/create_contact_sheet.dart';
-import '../widgets/create_group_sheet.dart';
-import '../widgets/new_contact_sheet.dart';
-import '../widgets/slidable_bar.dart';
+import '../../../History/presentation/providers/save_providers.dart';
+import '../../../Home/presentation/widgets/item_shimmers.dart';
+
 class SaveScreen extends ConsumerStatefulWidget {
   const SaveScreen({super.key});
 
@@ -26,10 +22,22 @@ class SaveScreen extends ConsumerStatefulWidget {
 
 class _SaveScreenState extends ConsumerState<SaveScreen> {
   final TextEditingController _searchController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(() {
+      if (_scrollController.position.pixels >= _scrollController.position.maxScrollExtent - 200) {
+        ref.read(savedProductsProvider.notifier).loadMore();
+      }
+    });
+  }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -117,7 +125,7 @@ class _SaveScreenState extends ConsumerState<SaveScreen> {
                                   ),
                                 ],
                               ),
-                              child: SvgPicture.asset(Assets.heart,height: 30,width: 30,),
+                              child: SvgPicture.asset(Assets.heart_fillup,height: 30,width: 30,),
                             ),
                           ),
                         ],
@@ -127,36 +135,84 @@ class _SaveScreenState extends ConsumerState<SaveScreen> {
                     const SizedBox(height: 10),
                     // Grid View Section (Now safely expanded within the Column)
                     Expanded(
-                      child: GridView.builder(
-                        padding: const EdgeInsets.only(
-                          left: 16,
-                          right: 16,
-                          bottom: 70,
-                        ),
-                        physics: const BouncingScrollPhysics(
-                          parent: AlwaysScrollableScrollPhysics(),
-                        ),
-                        gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                          crossAxisCount: 2,
-                          mainAxisSpacing: 14,
-                          crossAxisSpacing: 14,
-                          childAspectRatio: 0.74, // Adjusted to 0.65 to give your product text & price breathing room
-                        ),
-                        itemCount: 8,
-                        itemBuilder: (_, index) {
-                          return ProductCard(
-                            imageUrl:
-                            "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRqqdAMrQcJJr0-KSmcWeuYoJRYi6KSAczCOocvlPPg4A&s=10",
-                            brand: "BatManft",
-                            title: "Mini Multi-Functional",
-                            description:
-                            "Non-stick coating, for food contact. Multi-fun...",
-                            price: "\$13.40",
-                            onTap: () {
-                               context.push(AppPaths.product_details);
+                      child: ref.watch(savedProductsProvider).when(
+                        data: (response) {
+                          final bookmarks = response.bookmarks;
+                          if (bookmarks.isEmpty) {
+                            return const Center(
+                              child: Text(
+                                'No saved products found.',
+                                style: TextStyle(color: Colors.grey),
+                              ),
+                            );
+                          }
+                          return RefreshIndicator(
+                            onRefresh: (){
+                              return ref.read(savedProductsProvider.notifier).refresh();
                             },
+                            child: GridView.builder(
+                              controller: _scrollController,
+                              padding: const EdgeInsets.only(
+                                left: 16,
+                                right: 16,
+                                bottom: 70,
+                              ),
+                              physics: const BouncingScrollPhysics(
+                                parent: AlwaysScrollableScrollPhysics(),
+                              ),
+                              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                                crossAxisCount: 2,
+                                mainAxisSpacing: 14,
+                                crossAxisSpacing: 14,
+                                childAspectRatio: 0.74,
+                              ),
+                              itemCount: bookmarks.length,
+                              itemBuilder: (_, index) {
+                                final bookmark = bookmarks[index];
+                                final item = bookmark.product;
+                                if (item == null) return const SizedBox.shrink();
+                                return ProductCard(
+                                  imageUrl: item.imageUrls.isNotEmpty ? item.imageUrls.first : "",
+                                  brand: item.brand ?? "Unknown Brand",
+                                  title: item.title,
+                                  description: item.description ?? "",
+                                  price: "${item.currency == 'USD' ? '\$' : ''}${item.price ?? 0.0}",
+                                  onTap: () {
+                                    context.push(
+                                      AppPaths.product_details,
+                                      extra: item,
+                                    );
+                                  },
+                                );
+                              },
+                            ),
                           );
                         },
+                        loading: () => GridView.builder(
+                            shrinkWrap: true,
+                            padding: const EdgeInsets.only(
+                              left: 16,
+                              right: 16,
+                              bottom: 70,
+                            ),
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: 6, // Number of shimmer items
+                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              crossAxisSpacing: 12,
+                              mainAxisSpacing: 12,
+                              childAspectRatio: 0.68,
+                            ),
+                            itemBuilder: (context, index) {
+                              return const ProductItemShimmer();
+                            },
+                          ),
+                        error: (err, stack) => Center(
+                          child: Text(
+                            'Failed to load saved products: $err',
+                            style: const TextStyle(color: Colors.red),
+                          ),
+                        ),
                       ),
                     ),
                   ],

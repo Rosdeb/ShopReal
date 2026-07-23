@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:go_router/go_router.dart';
@@ -11,6 +12,7 @@ import '../../../Me/data/models/profile_model.dart';
 import '../../../Me/presentation/providers/profile_provider.dart';
 import '../../../ProductDetails/providers/prodcut_providers.dart';
 import '../providers/notification_providers.dart';
+import '../widgets/item_shimmers.dart';
 
 class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
@@ -21,24 +23,22 @@ class HomeScreen extends ConsumerStatefulWidget {
 
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   final TextEditingController _urlController = TextEditingController();
-  final ScrollController _scrollController = ScrollController();
+  final ScrollController controller = ScrollController();
   bool _showAnalyzeCard = true;
 
   @override
   void initState() {
     super.initState();
-    _scrollController.addListener(() {
-      if (_scrollController.offset > 30 && _showAnalyzeCard) {
-        setState(() => _showAnalyzeCard = false);
-      } else if (_scrollController.offset <= 30 && !_showAnalyzeCard) {
-        setState(() => _showAnalyzeCard = true);
+    controller.addListener(() {
+      if (controller.position.pixels >= controller.position.maxScrollExtent - 200) {
+        ref.read(productsProvider.notifier).loadMore();
       }
     });
   }
 
   @override
   void dispose() {
-    _scrollController.dispose();
+    controller.dispose();
     _urlController.dispose();
     super.dispose();
   }
@@ -247,7 +247,6 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
               // Scrollable Body
               Expanded(
                 child: SingleChildScrollView(
-                  controller: _scrollController,
                   physics: const AlwaysScrollableScrollPhysics(),
                   padding: const EdgeInsets.symmetric(horizontal: 20),
                   child: Column(
@@ -280,9 +279,9 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                       ),
                       const SizedBox(height: 12),
 
-                      ref.watch(productsListProvider).when(
+                      ref.watch(productsProvider).when(
                         data: (response) {
-                          final products = response.response.data;
+                          final products = response.products;
 
                           if (products.isEmpty) {
                             return const Padding(
@@ -298,6 +297,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
 
                           return GridView.builder(
                             shrinkWrap: true,
+                            controller: controller,
                             physics: const NeverScrollableScrollPhysics(),
                             padding: const EdgeInsets.only(bottom: 55),
                             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
@@ -312,7 +312,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                               return ProductCard(
                                 imageUrl: item.imageUrls.isNotEmpty
                                     ? item.imageUrls.first
-                                    : "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRqqdAMrQcJJr0-KSmcWeuYoJRYi6KSAczCOocvlPPg4A&s=10",
+                                    : "",
                                 brand: item.brand ?? "Unknown Brand",
                                 title: item.title,
                                 description: item.description ?? "",
@@ -320,16 +320,28 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                 onTap: () {
                                   context.push(
                                     AppPaths.product_details,
-                                    extra: item.id,
+                                    extra: item,
                                   );
                                 },
                               );
                             },
                           );
                         },
-                        loading: () => const Padding(
-                          padding: EdgeInsets.symmetric(vertical: 40.0),
-                          child: Center(child: CircularProgressIndicator()),
+                        loading: () => Center(
+                          child: GridView.builder(
+                            shrinkWrap: true,
+                            physics: const NeverScrollableScrollPhysics(),
+                            itemCount: 2, // Number of shimmer items
+                            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                              crossAxisCount: 2,
+                              crossAxisSpacing: 12,
+                              mainAxisSpacing: 12,
+                              childAspectRatio: 0.68,
+                            ),
+                            itemBuilder: (context, index) {
+                              return const ProductItemShimmer();
+                            },
+                          ),
                         ),
                         error: (err, stack) => Padding(
                           padding: const EdgeInsets.symmetric(vertical: 24.0),
@@ -472,10 +484,18 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         bottom: 0,
                       ),
                       border: InputBorder.none,
-                      suffixIcon: Padding(
-                        padding: const EdgeInsets.all(12.0),
-                        child: SvgPicture.asset(
-                          "assets/icons/clipboard-text.svg",
+                      suffixIcon: GestureDetector(
+                        onTap: () async {
+                          final clipboardData = await Clipboard.getData(Clipboard.kTextPlain);
+                          if (clipboardData != null && clipboardData.text != null) {
+                            _urlController.text = clipboardData.text!;
+                          }
+                        },
+                        child: Padding(
+                          padding: const EdgeInsets.all(12.0),
+                          child: SvgPicture.asset(
+                            "assets/icons/clipboard-text.svg",
+                          ),
                         ),
                       ),
                     ),
@@ -506,7 +526,14 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
           // Scan Button
           GestureDetector(
             onTap: () {
-              context.push(AppPaths.search_product);
+              final url = _urlController.text.trim();
+              if (url.isNotEmpty) {
+                _urlController.clear();
+              }
+              context.push(
+                AppPaths.search_product,
+                extra: url.isNotEmpty ? url : null,
+              );
             },
             child: Container(
               width: double.infinity,

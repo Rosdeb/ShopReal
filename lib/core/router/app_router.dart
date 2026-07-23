@@ -6,6 +6,7 @@ import 'package:messageapp/Features/Me/presentation/screens/edit_profile/edit_pr
 import 'package:messageapp/Features/Me/presentation/screens/notifications/notification_list_screen.dart';
 import 'package:messageapp/Features/Me/presentation/screens/notifications/notification_settings_screen.dart';
 import 'package:messageapp/Features/Me/presentation/screens/security_privacy/security_privacy_screen.dart';
+import 'package:messageapp/Features/ProductDetails/data/models/product_model.dart';
 import 'package:messageapp/Features/ProductDetails/product_detals.dart';
 import 'package:messageapp/Features/auth/presentation/screens/Auth/login_screen.dart';
 import 'package:messageapp/Features/auth/presentation/screens/Auth/register_screen.dart';
@@ -70,19 +71,38 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: AppPaths.product_details,
         name: AppRoutes.product_details,
-        pageBuilder: (context, state) => buildSlideTransitionPage(
-          key: state.pageKey,
-          child: ProductDetailsScreen(),
-        ),
+        pageBuilder: (context, state) {
+          final product = state.extra is ScannedProduct
+              ? state.extra as ScannedProduct
+              : const ScannedProduct(
+                  id: 'placeholder',
+                  url: '',
+                  title: 'Mini Multi-Functional Pot',
+                  description: 'Non-stick coating, for food contact. Multi-function cooking, delicacy. Two levels of firepower, firepower can be big or small...',
+                  price: 110.90,
+                  originalPrice: 110.0,
+                  currency: 'USD',
+                  imageUrls: ['https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRqqdAMrQcJJr0-KSmcWeuYoJRYi6KSAczCOocvlPPg4A&s=10'],
+                  scanCount: 2181,
+                  scans: [],
+                );
+          return buildSlideTransitionPage(
+            key: state.pageKey,
+            child: ProductDetailsScreen(product: product),
+          );
+        },
       ),
 
       GoRoute(
         path: AppPaths.search_product,
         name: AppRoutes.search_product,
-        pageBuilder: (context, state) => buildSlideTransitionPage(
-          key: state.pageKey,
-          child: AnalysisDataScreen(),
-        ),
+        pageBuilder: (context, state) {
+          final url = state.extra as String?;
+          return buildSlideTransitionPage(
+            key: state.pageKey,
+            child: AnalysisDataScreen(url: url),
+          );
+        },
       ),
 
       GoRoute(
